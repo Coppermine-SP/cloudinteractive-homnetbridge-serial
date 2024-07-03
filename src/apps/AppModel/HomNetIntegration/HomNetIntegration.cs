@@ -19,12 +19,14 @@ public class HomNetIntegration
 
     public HomNetIntegration(IHaContext ha, IAppConfig<HomNetIntegrationConfig> config, ILogger<HomNetIntegration> logger, IServiceProvider provider)
     {
+        _logger = logger;
+        _logger.LogInformation("cloudinteractive-homnetbridge-serial 2 Init..");
+
         //Init Services
         LightManagementService.Init(ha, provider.GetService<ILoggerFactory>().CreateLogger("LightManagementService"));
         LightManagementService.SerialSendEvent += SerialSendEvent;
 
         //Init SerialClient
-        _logger = logger;
         _serialClient =
             new SerialClient(provider.GetService<ILogger<SerialClient>>(), config.Value.SerialServerHost, config.Value.SerialServerPort);
         _serialClient.Connect();
