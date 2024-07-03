@@ -1,6 +1,7 @@
 ﻿
     public class HomNetIntegrationConfig
     {
-        public string? HelloMessage { get; set; }
+        public string SerialServerHost { get; set; }
+        public int SerialServerPort { get; set; }
     }
 

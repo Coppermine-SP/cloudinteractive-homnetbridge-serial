@@ -1,2 +1,3 @@
-AppModel.HelloConfig:
-  HelloMessage: Hello from yaml
+HomNetIntegrationConfig:
+  SerialServerHost: "10.10.4.50"
+  SerialServerPort: 8899
