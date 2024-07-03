@@ -1,10 +1,13 @@
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
+using cloudinteractive_homnetbridge_serial.apps.AppModel.HomNetIntegration.Services;
 using HomeAssistantGenerated;
-using NetDaemon.HassModel.Entities;
+using Microsoft.Extensions.DependencyInjection;
+using NetDaemon.HassModel.Integration;
+using ILogger = Microsoft.Extensions.Logging.ILogger;
 
-namespace AppModel;
+namespace cloudinteractive_homnetbridge_serial.apps.AppModel.HomNetIntegration;
 
 [NetDaemonApp]
 public class HomNetIntegration
@@ -14,12 +17,16 @@ public class HomNetIntegration
 
     private readonly ButtonEntity _evCallSwitch;
 
-    public HomNetIntegration(IHaContext ha, IAppConfig<HomNetIntegrationConfig> config, ILogger<HomNetIntegration> logger, ILogger<SerialClient> serialClientLogger)
+    public HomNetIntegration(IHaContext ha, IAppConfig<HomNetIntegrationConfig> config, ILogger<HomNetIntegration> logger, IServiceProvider provider)
     {
+        //Init Services
+        LightManagementService.Init(ha, provider.GetService<ILoggerFactory>().CreateLogger("LightManagementService"));
+        LightManagementService.SerialSendEvent += SerialSendEvent;
+
         //Init SerialClient
         _logger = logger;
         _serialClient =
-            new SerialClient(serialClientLogger, config.Value.SerialServerHost, config.Value.SerialServerPort);
+            new SerialClient(provider.GetService<ILogger<SerialClient>>(), config.Value.SerialServerHost, config.Value.SerialServerPort);
         _serialClient.Connect();
         _serialClient.ReceivedEvent += SerialClientOnReceivedEvent;
         _serialClient.DisconnectedEvent += SerialClientOnDisconnectedEvent;
@@ -27,6 +34,11 @@ public class HomNetIntegration
         //Init HA Entities
         _evCallSwitch = new ButtonEntity(ha, "input_button.homnet_evcall");
         _evCallSwitch.StateAllChanges().Subscribe(e => ElevatorCall());
+    }
+
+    private void SerialSendEvent(object? sender, SerialSendEventArgs e)
+    {
+        _serialClient.SendPacket(e.Content);
     }
 
     private void SerialClientOnDisconnectedEvent(object? sender, EventArgs e)
@@ -38,7 +50,13 @@ public class HomNetIntegration
 
     private void SerialClientOnReceivedEvent(object? sender, SerialClient.ReceiveEventArgs e)
     {
-        
+        if (e.Content.Substring(0, 2) != "02" || e.Content.Substring(e.Content.Length - 2, 2) != "03")
+        {
+            _logger.LogWarning("Packet header check failed: " + e.Content);
+            return;
+        }
+
+        if(e.Content.Length > 34 && e.Content.Substring(0, 34) == "0219010800C23D030219010D40C2000003") LightManagementService.LightStatusUpdate(e.Content);
     }
 
     private void ElevatorCall()
