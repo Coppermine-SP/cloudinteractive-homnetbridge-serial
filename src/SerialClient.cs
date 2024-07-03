@@ -1,10 +1,12 @@
 ﻿using System.ComponentModel;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Net;
 using System.Net.Sockets;
 using System.Timers;
 using Microsoft.AspNetCore.Razor.TagHelpers;
 using NetDaemon.Client;
+using Serilog.Events;
 
 public class SerialClient : IDisposable
 {
@@ -99,7 +101,7 @@ public class SerialClient : IDisposable
             int recv = asyncSocket.EndReceive(asyncResult);
             if (recv == 0) return;
             string receivedString = BitConverter.ToString(_buffer, 0, recv);
-            _logger.LogDebug("Received: " + receivedString);
+            _logger.LogDebug("Receive => " + receivedString);
 
             if (ReceivedEvent is not null) ReceivedEvent(this, new ReceiveEventArgs(receivedString.Replace("-", String.Empty)));
             asyncSocket.BeginReceive(_buffer, 0, _buffer.Length, SocketFlags.None,
@@ -111,6 +113,36 @@ public class SerialClient : IDisposable
             Disconnect();
         }
     }
+
+    public async void SendPacket(string hex)
+    {
+        if (!_isConnected || _socket is null) return;
+        try
+        {
+            byte[] message = HexToByte(hex); 
+            _socket.Send(message, 0, message.Length, SocketFlags.None);
+            _logger.LogInformation("Send => ");
+        }
+        catch (Exception e)
+        {
+            _logger.LogError("Exception occurred in send packet: " + e);
+            Disconnect();
+        }
+
+    }
+
+    public static byte[] HexToByte(string hex)
+    {
+        hex = hex.Trim();
+        hex = hex.Replace("-", String.Empty);
+        hex = hex.Replace(" ", String.Empty);
+
+        return Enumerable.Range(0, hex.Length)
+            .Where(x => x % 2 == 0)
+            .Select(x => Convert.ToByte(hex.Substring(x, 2), 16))
+            .ToArray();
+    }
+
 
     private void ConnectionCheck(object? sender, ElapsedEventArgs e)
     {
