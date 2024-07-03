@@ -173,6 +173,7 @@ public class SerialClient : IDisposable
 
             // TODO: free unmanaged resources (unmanaged objects) and override finalizer
             // TODO: set large fields to null
+            Disconnect();
             _disposedValue = true;
         }
     }
