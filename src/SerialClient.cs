@@ -38,7 +38,6 @@ public class SerialClient : IDisposable
         _logger = logger;
         _host = host;
         _port = port;
-
         _isConnected = false;
     }
 
@@ -121,7 +120,7 @@ public class SerialClient : IDisposable
         {
             byte[] message = HexToByte(hex); 
             _socket.Send(message, 0, message.Length, SocketFlags.None);
-            _logger.LogInformation("Send => ");
+            _logger.LogInformation("Send => " + hex);
         }
         catch (Exception e)
         {
