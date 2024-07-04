@@ -56,7 +56,6 @@ input_button:
 
 input_boolean:
   homnet_light_0_state:
-    editable: true
   homnet_light_1_state:
   homnet_light_2_state:
 
