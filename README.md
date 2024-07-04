@@ -3,7 +3,7 @@
 
 이 프로젝트는 구형 LG HomNet 기반 스마트 홈 시스템 월패드의 RS485 통신을 캡쳐하여 Home Assistant에 통합하는 프로젝트입니다.
 
-<img src="img/sample_2.png" style="height: 350px"/> <img src="img/sample_1.png" style="height: 350px;"/>
+<img src="img/sample_2.png" style="height: 320px"/> <img src="img/sample_1.png" style="height: 320px;"/>
 
 ### Table of Contents
 - [Features](#features)
