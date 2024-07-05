@@ -115,7 +115,7 @@ public class SerialClient : IDisposable
 
     public async void SendPacket(string hex)
     {
-        if (!_isConnected || _socket is null) return;
+        if (_socket is null) return;
         try
         {
             byte[] message = HexToByte(hex); 
@@ -142,7 +142,6 @@ public class SerialClient : IDisposable
             .ToArray();
     }
 
-
     private void ConnectionCheck(object? sender, ElapsedEventArgs e)
     {
         try
@@ -152,11 +151,6 @@ public class SerialClient : IDisposable
         catch(Exception ex)
         {
             _logger.LogError("Exception occurred in connection keep-alive check: " + ex);
-        }
-
-        if (!_isConnected)
-        {
-            _logger.LogWarning("Connection keep-alive check failed. Disconnecting..");
             Disconnect();
         }
     }
