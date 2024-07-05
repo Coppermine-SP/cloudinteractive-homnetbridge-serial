@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using HomeAssistantGenerated;
@@ -11,6 +12,7 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using NetDaemon.HassModel.Integration;
 using YamlDotNet.Core.Tokens;
+using YamlDotNet.Serialization;
 
 namespace cloudinteractive_homnetbridge_serial.apps.AppModel.HomNetIntegration.Services
 {
@@ -23,10 +25,11 @@ namespace cloudinteractive_homnetbridge_serial.apps.AppModel.HomNetIntegration.S
     public static class LightManagementService
     {
         private static ILogger _logger;
-        private static readonly Dictionary<int, InputBooleanEntity> _lightStatusEntities = new Dictionary<int, InputBooleanEntity>();
+        private static Dictionary<int, InputBooleanEntity> _lightStatusEntities;
         private static bool[] _lightStatus = { false, false, false };
         private static bool _isUpdated = false;
         private static object _updateLock = new object();
+        private static Task? _updateTask  = null;
         private static ConcurrentQueue<LightCallbackData> _requestQueue = new ConcurrentQueue<LightCallbackData>();
         public record LightCallbackData(int idx, bool state);
 
@@ -60,14 +63,24 @@ namespace cloudinteractive_homnetbridge_serial.apps.AppModel.HomNetIntegration.S
         {
             _logger = logger;
             _logger.LogInformation("LightManagementService Init...");
-            
-            context.RegisterServiceCallBack<LightCallbackData>("callback_light", LightEntityCallbackEvent);
-
+            _lightStatusEntities = new Dictionary<int, InputBooleanEntity>();
             _lightStatusEntities.Add(0, new InputBooleanEntity(context, "input_boolean.homnet_light_0_state"));
             _lightStatusEntities.Add(1, new InputBooleanEntity(context, "input_boolean.homnet_light_1_state"));
             _lightStatusEntities.Add(2, new InputBooleanEntity(context, "input_boolean.homnet_light_2_state"));
 
-            Task.Run(RequestTask);
+            if (_updateTask is null)
+            {
+                _updateTask = new Task(RequestTask);
+                _updateTask.Start();
+            }
+        }
+
+        public static void ChangeLightStatus(LightCallbackData x)
+        {
+            if (x.state) _lightStatusEntities[x.idx].TurnOn();
+            else _lightStatusEntities[x.idx].TurnOff();
+
+            _requestQueue.Enqueue(new LightManagementService.LightCallbackData(x.idx, x.state));
         }
 
         private static async void RequestTask()
@@ -97,17 +110,7 @@ namespace cloudinteractive_homnetbridge_serial.apps.AppModel.HomNetIntegration.S
                 Thread.Sleep(100);
             }
         }
-
-        private static void LightEntityCallbackEvent(LightCallbackData e)
-        {
-            _logger.LogInformation($"LightEntityCallback : {e.idx} => {e.state}");
-
-            if (e.state) _lightStatusEntities[e.idx].TurnOn();
-            else _lightStatusEntities[e.idx].TurnOff();
-
-            _requestQueue.Enqueue(e);
-        }
-
+        
         public static void LightStatusUpdate(string content)
         {
             lock (_updateLock)
