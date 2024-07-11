@@ -1,5 +1,11 @@
-# HomNetBridge-Serial
+# HomNetBridge-Serial [Deprecated]
 <img src="https://img.shields.io/badge/.NET-512BD4?style=for-the-badge&logo=dotnet&logoColor=white"> <img src="https://img.shields.io/badge/Home Assistant-18BCF2?style=for-the-badge&logo=homeassistant&logoColor=white">
+>[!WARNING]
+>**이 프로젝트는 Deprecated 되었습니다.**
+>
+>[HomNetBridge-2](https://github.com/Coppermine-SP/homnetbridge-2) 프로젝트로 모든 홈넷 관련 기능이 통합되었습니다.
+
+- - -
 
 이 프로젝트는 구형 LG HomNet 기반 스마트 홈 시스템 월패드의 RS485 통신을 캡쳐하여 Home Assistant에 통합하는 프로젝트입니다.
 
